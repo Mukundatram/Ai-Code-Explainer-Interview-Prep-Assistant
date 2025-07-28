@@ -58,19 +58,4 @@ An **AI-powered Streamlit application** designed to analyze source code, explain
 
 ## **🧠 Workflow of the Project**
 
-```plaintext
-[User Pastes Code] 
-        ↓
- [Select Language]
-        ↓
-[Run Code or Analyze]
-        ↓
-  ┌───────────────┐
-  │   AI Analysis │ --> [Explanation + Interview Qs]
-  └───────────────┘
-        ↓
- [Complexity Engine]
-        ↓
-[Time/Space Estimation] ----> [Graphs]
-        ↓
- [User Q&A + Voice Queries]
+<img width="1027" height="1134" alt="image" src="https://github.com/user-attachments/assets/a2e6c0ea-dce2-4652-a8ce-7d9771030cda" />
