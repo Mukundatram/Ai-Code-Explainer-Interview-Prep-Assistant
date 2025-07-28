@@ -59,6 +59,8 @@ An **AI-powered Streamlit application** designed to analyze source code, explain
 ## **🧠 Workflow of the Project**
 
 # Code Explainer + Interview Prep Assistant - Detailed Workflow
+<img width="657" height="960" alt="image" src="https://github.com/user-attachments/assets/ee9e1fdd-2b35-4250-8588-cdfa6f1fcca1" />
+
 
 
 
