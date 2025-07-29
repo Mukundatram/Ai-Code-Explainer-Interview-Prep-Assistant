@@ -86,30 +86,16 @@ advanced-code-explainer/
 
 
 ##🚀 Getting Started
-1. Clone the Repository
-bash
-Copy
-Edit
+## 1. Clone the Repository
 git clone https://github.com/your-username/advanced-code-explainer.git
 cd advanced-code-explainer
-2. Install Dependencies
+## 2. Install Dependencies
 Create a virtual environment (optional but recommended):
-
-bash
-Copy
-Edit
 python -m venv venv
 source venv/bin/activate  # or venv\Scripts\activate on Windows
 Then install requirements:
-
-bash
-Copy
-Edit
-pip install -r requirements.txt
-3. Run the App
-bash
-Copy
-Edit
+*pip install -r requirements.txt*
+## 3. Run the App
 streamlit run main.py
 
 
