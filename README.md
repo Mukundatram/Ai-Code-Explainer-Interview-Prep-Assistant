@@ -62,6 +62,55 @@ An **AI-powered Streamlit application** designed to analyze source code, explain
 <img width="657" height="960" alt="image" src="https://github.com/user-attachments/assets/ee9e1fdd-2b35-4250-8588-cdfa6f1fcca1" />
 
 
+## 🗂️ Project Structure
+
+```bash
+advanced-code-explainer/
+├── core/
+│   ├── hf_llm.py               # LLM querying logic
+│   ├── code_runner.py          # Runtime execution using Piston API
+│   └── prompts.py              # Prompt templates for LLM
+│
+├── utils/
+│   ├── __init__.py
+│   ├── utils_ast.py            # AST-based outline generator
+│   ├── utils_complexity.py     # Heuristic complexity guess
+│   ├── utils_complexity_advanced.py  # Python cyclomatic complexity
+│   └── utils_complexity_generic.py   # General language heuristics
+│
+├── main.py                     # Lightweight entry point for running app
+├── app.py                      # Main Streamlit interface
+├── requirements.txt
+└── README.md
+
+
+
+##🚀 Getting Started
+1. Clone the Repository
+bash
+Copy
+Edit
+git clone https://github.com/your-username/advanced-code-explainer.git
+cd advanced-code-explainer
+2. Install Dependencies
+Create a virtual environment (optional but recommended):
+
+bash
+Copy
+Edit
+python -m venv venv
+source venv/bin/activate  # or venv\Scripts\activate on Windows
+Then install requirements:
+
+bash
+Copy
+Edit
+pip install -r requirements.txt
+3. Run the App
+bash
+Copy
+Edit
+streamlit run main.py
 
 
 
