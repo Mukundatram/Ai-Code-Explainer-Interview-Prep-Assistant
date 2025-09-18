@@ -1,3 +1,4 @@
+# Updated utils_ast.py
 import ast
 import re
 
@@ -61,3 +62,100 @@ def generate_outline(code: str, lang: str = "python") -> str:
     outline.append(f"Number of Loops: {structure['loops']}")
     outline.append(f"Variables: {', '.join(structure['variables']) or 'None'}")
     return "\n".join(outline)
+
+def get_first_function_name(code: str) -> str | None:
+    """
+    Extract the name of the first function definition in the Python code using AST.
+    """
+    try:
+        tree = ast.parse(code)
+        for node in tree.body:
+            if isinstance(node, ast.FunctionDef):
+                return node.name
+        return None
+    except SyntaxError:
+        return None
+
+def execute_instrumented_code(code_str, input_value):
+    """
+    Execute the user code, locate the first function definition, wrap it so every
+    call is recorded in `calls` (args, depth, index, parent_index, result, memoized),
+    then invoke it with input_value and return the call trace.
+    """
+    try:
+        # Parse the code and ensure there's a function
+        tree = ast.parse(code_str)
+        if not tree.body:
+            return None, "Error: No valid code provided."
+
+        func_name = get_first_function_name(code_str)
+        if not func_name:
+            return None, "Error: No function definition found in the code."
+
+        # Execute the user code in a fresh namespace
+        exec_globals = {}
+        exec(compile(tree, "<string>", "exec"), exec_globals)
+
+        if func_name not in exec_globals:
+            return None, "Error: Function not found after execution."
+
+        original_func = exec_globals[func_name]
+
+        # Trace containers
+        calls = []
+        call_counter = {"count": 0}
+        parent_stack = []
+        memo = {}  # cache for memoization
+
+        # Wrapper factory - will intercept every call (including recursive ones)
+        def make_wrapper(f):
+            def wrapper(*args, **kwargs):
+                idx = call_counter["count"]
+                call_counter["count"] += 1
+                depth = len(parent_stack)
+                parent_idx = parent_stack[-1] if parent_stack else None
+
+                # Normalize args for dict key
+                key = (args, tuple(sorted(kwargs.items())))
+                memoized = key in memo
+
+                # Store simple representation of args
+                simple_args = []
+                for a in args:
+                    if isinstance(a, (int, float, str, bool, type(None))):
+                        simple_args.append(a)
+                    else:
+                        try:
+                            simple_args.append(repr(a))
+                        except Exception:
+                            simple_args.append(str(type(a)))
+
+                calls.append((simple_args, depth, idx, parent_idx, None, memoized))
+                parent_stack.append(idx)
+
+                if memoized:
+                    result = memo[key]
+                else:
+                    result = f(*args, **kwargs)
+                    memo[key] = result
+
+                parent_stack.pop()
+                # Update recorded result
+                calls[idx] = (calls[idx][0], calls[idx][1], calls[idx][2], calls[idx][3], result, memoized)
+                return result
+            return wrapper
+
+        # Create wrapper, replace the name in globals so recursive calls hit wrapper
+        wrapped_func = make_wrapper(original_func)
+        exec_globals[func_name] = wrapped_func
+
+        # Call the wrapped function with the input value
+        if isinstance(input_value, (list, tuple)):
+            result = wrapped_func(*input_value)
+        else:
+            result = wrapped_func(input_value)
+
+        return calls, None
+
+    except Exception as e:
+        return None, f"Error: {str(e)}"

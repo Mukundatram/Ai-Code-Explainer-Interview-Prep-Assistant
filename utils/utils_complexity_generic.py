@@ -22,6 +22,14 @@ def heuristic_time_complexity(code: str) -> str:
         return "O(n)"
     else:
         return "O(1)"
+    
+def get_complexity_level(complexity: str) -> int:
+    """Convert complexity string to numerical level for comparison"""
+    complexity_levels = {
+        'O(1)': 1, 'O(log n)': 2, 'O(n)': 3, 
+        'O(n log n)': 4, 'O(n²)': 5, 'O(2ⁿ)': 6, 'O(n!)': 7
+    }
+    return complexity_levels.get(complexity, 0)
 
 def heuristic_space_complexity(code: str) -> str:
     """Estimate space complexity heuristically for any language."""
