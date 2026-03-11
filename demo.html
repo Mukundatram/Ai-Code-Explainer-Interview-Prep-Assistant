@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code Explanation Assistant with TTS</title>
+    <style>
+        :root {
+            --primary: #2d3e50;
+            --secondary: #42b983;
+            --accent: #3498db;
+            --light: #ecf0f1;
+            --dark: #34495e;
+            --error: #e74c3c;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7f9;
+            color: var(--dark);
+            line-height: 1.6;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        header {
+            background: var(--primary);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        h1 {
+            margin-bottom: 10px;
+        }
+        
+        .content {
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .code-section, .explanation-section {
+            background: var(--light);
+            border-radius: 8px;
+            padding: 15px;
+        }
+        
+        h2 {
+            color: var(--primary);
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--accent);
+        }
+        
+        .code-block {
+            background: #2d3e50;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            overflow-x: auto;
+            margin-bottom: 15px;
+        }
+        
+        .explanation-text {
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid var(--secondary);
+            margin-bottom: 15px;
+            line-height: 1.6;
+        }
+        
+        .tts-controls {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .control-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: var(--dark);
+        }
+        
+        select, input[type="range"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: white;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .btn-primary {
+            background: var(--secondary);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #3aa876;
+        }
+        
+        .btn-secondary {
+            background: var(--accent);
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #2980b9;
+        }
+        
+        .btn-tertiary {
+            background: var(--light);
+            color: var(--dark);
+        }
+        
+        .btn-tertiary:hover {
+            background: #dfe6e9;
+        }
+        
+        .status {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 4px;
+            text-align: center;
+            font-weight: 600;
+        }
+        
+        .speaking {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .paused {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .stopped {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .pronunciation-help {
+            margin-top: 20px;
+            padding: 15px;
+            background: #e8f4fc;
+            border-radius: 8px;
+            border-left: 4px solid var(--accent);
+        }
+        
+        .pronunciation-help h3 {
+            color: var(--accent);
+            margin-bottom: 10px;
+        }
+        
+        .pronunciation-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #cce5ff;
+        }
+        
+        .pronunciation-item:last-child {
+            border-bottom: none;
+        }
+        
+        .code-term {
+            font-family: 'Consolas', monospace;
+            font-weight: 600;
+        }
+        
+        .spoken-term {
+            color: var(--secondary);
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Code Explanation Assistant</h1>
+            <p>Get explanations for your code and listen to them</p>
+        </header>
+        
+        <div class="content">
+            <div class="code-section">
+                <h2>Code Example</h2>
+                <div class="code-block">
+                    for i in range(10):<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;print(i)
+                </div>
+                
+                <div class="explanation-text">
+                    <p>This code uses a loop to count from 0 up to (but not including) 10. In each step of the count, the current number is assigned to the variable i. Then, the code prints the value of i to the console. It will print numbers 0, 1, 2, 3, 4, 5, 6, 7, 8, and 9, each on a new line.</p>
+                </div>
+                
+                <div class="pronunciation-help">
+                    <h3>Pronunciation Guide</h3>
+                    <div class="pronunciation-item">
+                        <span class="code-term">i</span>
+                        <span class="spoken-term">→ pronounced as "eye"</span>
+                    </div>
+                    <div class="pronunciation-item">
+                        <span class="code-term">print(i)</span>
+                        <span class="spoken-term">→ pronounced as "print eye"</span>
+                    </div>
+                    <div class="pronunciation-item">
+                        <span class="code-term">for i in</span>
+                        <span class="spoken-term">→ pronounced as "for eye in"</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="explanation-section">
+                <h2>Text-to-Speech Controls</h2>
+                
+                <div class="tts-controls">
+                    <div class="control-group">
+                        <label for="voiceSelect">Voice:</label>
+                        <select id="voiceSelect"></select>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label for="rateSlider">Speed: <span id="rateValue">1</span></label>
+                        <input type="range" id="rateSlider" min="0.5" max="2" step="0.1" value="1">
+                    </div>
+                    
+                    <div class="control-group">
+                        <label for="pitchSlider">Pitch: <span id="pitchValue">1</span></label>
+                        <input type="range" id="pitchSlider" min="0.5" max="2" step="0.1" value="1">
+                    </div>
+                    
+                    <div class="button-group">
+                        <button id="playBtn" class="btn-primary">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                                <path d="M3 2v12l10-6-10-6z"/>
+                            </svg>
+                            Play Explanation
+                        </button>
+                        <button id="pauseBtn" class="btn-tertiary">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                                <path d="M3 2h3v12H3V2zm7 0h3v12h-3V2z"/>
+                            </svg>
+                            Pause
+                        </button>
+                        <button id="resumeBtn" class="btn-tertiary">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                                <path d="M3 2h2v12H3V2zm8 0h2v12h-2V2z"/>
+                            </svg>
+                            Resume
+                        </button>
+                        <button id="stopBtn" class="btn-tertiary">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                                <rect x="2" y="2" width="12" height="12" rx="1" ry="1"/>
+                            </svg>
+                            Stop
+                        </button>
+                    </div>
+                    
+                    <div id="status" class="status stopped">Ready to speak</div>
+                </div>
+                
+                <div class="pronunciation-help">
+                    <h3>Why does "i" sound wrong?</h3>
+                    <p>Text-to-speech systems often pronounce single letters literally. In programming, "i" is typically pronounced as "eye" when used as a variable name, especially in loop contexts.</p>
+                    <p>Our system automatically corrects these pronunciations for clearer code explanations.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // DOM Elements
+            const voiceSelect = document.getElementById('voiceSelect');
+            const rateSlider = document.getElementById('rateSlider');
+            const pitchSlider = document.getElementById('pitchSlider');
+            const rateValue = document.getElementById('rateValue');
+            const pitchValue = document.getElementById('pitchValue');
+            const playBtn = document.getElementById('playBtn');
+            const pauseBtn = document.getElementById('pauseBtn');
+            const resumeBtn = document.getElementById('resumeBtn');
+            const stopBtn = document.getElementById('stopBtn');
+            const status = document.getElementById('status');
+            
+            // Speech synthesis setup
+            let speechSynthesis = window.speechSynthesis;
+            let speechUtterance = null;
+            let voices = [];
+            
+            // Explanation text
+            const explanationText = "This code uses a loop to count from 0 up to (but not including) 10. In each step of the count, the current number is assigned to the variable i. Then, the code prints the value of i to the console. It will print numbers 0, 1, 2, 3, 4, 5, 6, 7, 8, and 9, each on a new line.";
+            
+            // Fix pronunciation of code terms
+            function fixCodePronunciation(text) {
+                // Replace code terms with more phonetic versions
+                const replacements = [
+                    { pattern: /\bi\b/gi, replacement: 'eye' },
+                    { pattern: /print\(i\)/gi, replacement: 'print eye' },
+                    { pattern: /for i in/gi, replacement: 'for eye in' },
+                    { pattern: /variable i/gi, replacement: 'variable eye' },
+                    { pattern: /value of i/gi, replacement: 'value of eye' },
+                    { pattern: /\bi equals/gi, replacement: 'eye equals' },
+                    { pattern: /\bi is/gi, replacement: 'eye is' },
+                ];
+                
+                let correctedText = text;
+                for (const replacement of replacements) {
+                    correctedText = correctedText.replace(replacement.pattern, replacement.replacement);
+                }
+                
+                return correctedText;
+            }
+            
+            // Initialize voices
+            function loadVoices() {
+                voices = speechSynthesis.getVoices();
+                voiceSelect.innerHTML = '';
+                
+                voices.forEach(voice => {
+                    const option = document.createElement('option');
+                    option.value = voice.name;
+                    option.textContent = `${voice.name} (${voice.lang})`;
+                    voiceSelect.appendChild(option);
+                });
+            }
+            
+            // Load voices when they are available
+            if (speechSynthesis.onvoiceschanged !== undefined) {
+                speechSynthesis.onvoiceschanged = loadVoices;
+            }
+            
+            // Initial load
+            loadVoices();
+            
+            // Update slider value displays
+            rateSlider.addEventListener('input', () => {
+                rateValue.textContent = rateSlider.value;
+            });
+            
+            pitchSlider.addEventListener('input', () => {
+                pitchValue.textContent = pitchSlider.value;
+            });
+            
+            // Text-to-speech functions
+            playBtn.addEventListener('click', () => {
+                const correctedText = fixCodePronunciation(explanationText);
+                speakText(correctedText);
+            });
+            
+            pauseBtn.addEventListener('click', () => {
+                if (speechSynthesis.speaking) {
+                    speechSynthesis.pause();
+                    status.textContent = 'Paused';
+                    status.className = 'status paused';
+                }
+            });
+            
+            resumeBtn.addEventListener('click', () => {
+                if (speechSynthesis.paused) {
+                    speechSynthesis.resume();
+                    status.textContent = 'Speaking...';
+                    status.className = 'status speaking';
+                }
+            });
+            
+            stopBtn.addEventListener('click', stopSpeech);
+            
+            function speakText(text) {
+                // Stop any ongoing speech
+                stopSpeech();
+                
+                // Create new utterance
+                speechUtterance = new SpeechSynthesisUtterance(text);
+                
+                // Set selected voice
+                const selectedVoice = voiceSelect.selectedOptions[0].value;
+                const voice = voices.find(v => v.name === selectedVoice);
+                
+                if (voice) {
+                    speechUtterance.voice = voice;
+                }
+                
+                // Set rate and pitch
+                speechUtterance.rate = parseFloat(rateSlider.value);
+                speechUtterance.pitch = parseFloat(pitchSlider.value);
+                
+                // Event listeners
+                speechUtterance.onstart = () => {
+                    status.textContent = 'Speaking...';
+                    status.className = 'status speaking';
+                };
+                
+                speechUtterance.onend = () => {
+                    status.textContent = 'Finished';
+                    status.className = 'status stopped';
+                };
+                
+                speechUtterance.onerror = (event) => {
+                    console.error('Speech synthesis error:', event);
+                    status.textContent = 'Error: ' + event.error;
+                    status.className = 'status stopped';
+                };
+                
+                // Start speaking
+                speechSynthesis.speak(speechUtterance);
+            }
+            
+            function stopSpeech() {
+                if (speechSynthesis.speaking || speechSynthesis.paused) {
+                    speechSynthesis.cancel();
+                    status.textContent = 'Stopped';
+                    status.className = 'status stopped';
+                }
+            }
+        });
+    </script>
+</body>
+</html>

@@ -76,6 +76,7 @@ def get_first_function_name(code: str) -> str | None:
     except SyntaxError:
         return None
 
+
 def execute_instrumented_code(code_str, input_value):
     """
     Execute the user code, locate the first function definition, wrap it so every
@@ -92,8 +93,21 @@ def execute_instrumented_code(code_str, input_value):
         if not func_name:
             return None, "Error: No function definition found in the code."
 
-        # Execute the user code in a fresh namespace
-        exec_globals = {}
+        # Execute the user code in a fresh namespace.
+        # Override input() so code that calls it raises a clear error
+        # instead of blocking the terminal waiting for keyboard input.
+        # Override print() so side-effect output doesn't leak to the terminal.
+        def _blocked_input(prompt=""):
+            raise RuntimeError(
+                "input() is not supported in the Recursion Visualizer. "
+                "Hardcode your test value directly in the function, "
+                "or pass it via the 'Input' field above."
+            )
+
+        exec_globals = {
+            "input": _blocked_input,
+            "print": lambda *a, **kw: None,   # suppress terminal prints during tracing
+        }
         exec(compile(tree, "<string>", "exec"), exec_globals)
 
         if func_name not in exec_globals:
@@ -105,9 +119,8 @@ def execute_instrumented_code(code_str, input_value):
         calls = []
         call_counter = {"count": 0}
         parent_stack = []
-        memo = {}  # cache for memoization
+        memo = {}  # cache for memoization detection
 
-        # Wrapper factory - will intercept every call (including recursive ones)
         def make_wrapper(f):
             def wrapper(*args, **kwargs):
                 idx = call_counter["count"]
@@ -116,8 +129,12 @@ def execute_instrumented_code(code_str, input_value):
                 parent_idx = parent_stack[-1] if parent_stack else None
 
                 # Normalize args for dict key
-                key = (args, tuple(sorted(kwargs.items())))
-                memoized = key in memo
+                try:
+                    key = (args, tuple(sorted(kwargs.items())))
+                    memoized = key in memo
+                except TypeError:
+                    key = None
+                    memoized = False
 
                 # Store simple representation of args
                 simple_args = []
@@ -133,29 +150,32 @@ def execute_instrumented_code(code_str, input_value):
                 calls.append((simple_args, depth, idx, parent_idx, None, memoized))
                 parent_stack.append(idx)
 
-                if memoized:
+                if memoized and key is not None:
                     result = memo[key]
                 else:
                     result = f(*args, **kwargs)
-                    memo[key] = result
+                    if key is not None:
+                        memo[key] = result
 
                 parent_stack.pop()
                 # Update recorded result
-                calls[idx] = (calls[idx][0], calls[idx][1], calls[idx][2], calls[idx][3], result, memoized)
+                calls[idx] = (calls[idx][0], calls[idx][1], calls[idx][2],
+                               calls[idx][3], result, memoized)
                 return result
             return wrapper
 
-        # Create wrapper, replace the name in globals so recursive calls hit wrapper
+        # Replace function in globals so recursive calls hit the wrapper
         wrapped_func = make_wrapper(original_func)
         exec_globals[func_name] = wrapped_func
 
-        # Call the wrapped function with the input value
+        # Invoke with the user-supplied input
         if isinstance(input_value, (list, tuple)):
-            result = wrapped_func(*input_value)
+            wrapped_func(*input_value)
         else:
-            result = wrapped_func(input_value)
+            wrapped_func(input_value)
 
         return calls, None
 
     except Exception as e:
         return None, f"Error: {str(e)}"
+
